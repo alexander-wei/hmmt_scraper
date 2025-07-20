@@ -2,6 +2,7 @@ import aiohttp
 import aiofiles
 import asyncio
 import os
+import random
 import async_timeout
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -13,7 +14,6 @@ OUTPUT_DIR = "downloaded_pdfs"
 CONCURRENT_REQUESTS = 10  # adjust as needed
 REQUEST_TIMEOUT = 10  # seconds
 
-# Chrome-like User-Agent
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -34,6 +34,7 @@ def retry_async():
 
 @retry_async()
 async def fetch_html(session, url):
+    await asyncio.sleep(random.uniform(0, 1))  # random delay
     async with sem:
         with async_timeout.timeout(REQUEST_TIMEOUT):
             async with session.get(url, headers=HEADERS) as response:
@@ -43,6 +44,7 @@ async def fetch_html(session, url):
 
 @retry_async()
 async def download_file(session, url, out_dir):
+    await asyncio.sleep(random.uniform(0, 1))  # random delay
     filename = os.path.basename(urlparse(url).path)
     filepath = os.path.join(out_dir, filename)
     if os.path.exists(filepath):
