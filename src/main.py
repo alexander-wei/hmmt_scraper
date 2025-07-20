@@ -13,10 +13,17 @@ OUTPUT_DIR = "downloaded_pdfs"
 CONCURRENT_REQUESTS = 10  # adjust as needed
 REQUEST_TIMEOUT = 10  # seconds
 
+# Chrome-like User-Agent
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/125.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
 sem = asyncio.Semaphore(CONCURRENT_REQUESTS)
 
 
-# Retry decorator: max 5 attempts, exponential backoff 1s → 2s → 4s...
 def retry_async():
     return retry(
         stop=stop_after_attempt(5),
@@ -29,7 +36,7 @@ def retry_async():
 async def fetch_html(session, url):
     async with sem:
         with async_timeout.timeout(REQUEST_TIMEOUT):
-            async with session.get(url) as response:
+            async with session.get(url, headers=HEADERS) as response:
                 response.raise_for_status()
                 return await response.text()
 
@@ -43,7 +50,7 @@ async def download_file(session, url, out_dir):
 
     async with sem:
         with async_timeout.timeout(REQUEST_TIMEOUT):
-            async with session.get(url) as response:
+            async with session.get(url, headers=HEADERS) as response:
                 response.raise_for_status()
                 async with aiofiles.open(filepath, "wb") as f:
                     await f.write(await response.read())
@@ -61,12 +68,10 @@ async def get_links_in_content(session, url):
 async def scrape():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     async with aiohttp.ClientSession() as session:
-        # Step 1: Get links pages
         print("📥 Fetching links pages...")
         links_pages = await get_links_in_content(session, BASE_URL)
 
         pdf_links = set()
-        # Step 2: For each links page, get PDF links (with progress bar)
         for link_page in tqdm(links_pages, desc="🔗 Discovering PDFs"):
             try:
                 sub_links = await get_links_in_content(session, link_page)
@@ -76,7 +81,6 @@ async def scrape():
             except RetryError as e:
                 print(f"⚠️ Failed to fetch {link_page}: {e}")
 
-        # Step 3: Download PDFs (with progress bar)
         print(f"📄 Found {len(pdf_links)} PDFs. Starting downloads...")
         tasks = [
             asyncio.create_task(download_file(session, pdf_url, OUTPUT_DIR))
