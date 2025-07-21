@@ -1,15 +1,16 @@
-import aiohttp
-import aiofiles
 import asyncio
+import json
 import os
 import random
 import string
-import json
+from urllib.parse import urljoin, urlparse
+
+import aiofiles
+import aiohttp
 import async_timeout
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
 from tqdm.asyncio import tqdm
-from tenacity import retry, stop_after_attempt, wait_exponential, RetryError
 
 BASE_URL = "https://www.hmmt.org/www/archive/problems"
 OUTPUT_DIR = "downloaded_pdfs"
