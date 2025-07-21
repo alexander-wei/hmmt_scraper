@@ -40,7 +40,6 @@ This tool was developed to make life easier for AI/LLM data annotators. By autom
 src/
   main.py           # Main scraper script
   downloaded_pdfs/  # Output directory for PDFs
-  bk_downloads/     # (Optional) Backup or alternate downloads
 download_log.json   # Log of all downloaded files
 README.md           # Project documentation
 ```
