@@ -1,3 +1,36 @@
+"""
+Asynchronous PDF Scraper for HMMT Archive
+
+This module provides an asynchronous web scraper that downloads all PDF files
+linked from the Harvard-MIT Mathematics Tournament (HMMT) archive problems page.
+
+Features
+--------
+- Crawls the HMMT archive problems page and its subpages to discover all PDF links.
+- Downloads PDFs concurrently with robust retry logic and timeout handling.
+- Saves each PDF with a unique filename to avoid collisions.
+- Logs all downloads to a JSON file for traceability.
+
+Usage
+-----
+Run this script directly to start scraping and downloading PDFs:
+
+    python main.py
+
+The downloaded PDFs will be saved in the ``downloaded_pdfs/`` directory, and
+a log of all downloads will be written to ``download_log.json``.
+
+Dependencies
+------------
+- aiohttp
+- aiofiles
+- async_timeout
+- beautifulsoup4
+- tenacity
+- tqdm
+
+"""
+
 import asyncio
 import json
 import os
