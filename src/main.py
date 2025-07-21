@@ -63,6 +63,15 @@ download_log = []
 
 
 def retry_async():
+    """
+    Returns a tenacity retry decorator configured for asynchronous operations.
+
+    The decorator retries a function up to 5 times with exponential backoff,
+    raising the last exception if all attempts fail.
+
+    :return: Configured tenacity.retry decorator for async functions.
+    :rtype: tenacity.retry
+    """
     return retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=1, max=10),
@@ -71,11 +80,27 @@ def retry_async():
 
 
 def random_string(length=12):
+    """
+    Generate a random alphanumeric string.
+
+    :param int length: Length of the generated string. Default is 12.
+    :return: Random string of specified length.
+    :rtype: str
+    """
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 @retry_async()
 async def fetch_html(session, url):
+    """
+    Asynchronously fetch the HTML content of a given URL.
+
+    :param aiohttp.ClientSession session: The aiohttp session to use for the request.
+    :param str url: The URL to fetch.
+    :return: HTML content as a string.
+    :rtype: str
+    :raises aiohttp.ClientError: If the request fails after retries.
+    """
     await asyncio.sleep(random.uniform(0, 1))
     async with sem:
         with async_timeout.timeout(REQUEST_TIMEOUT):
@@ -86,6 +111,19 @@ async def fetch_html(session, url):
 
 @retry_async()
 async def download_file(session, url, out_dir):
+    """
+    Asynchronously download a file from a URL and save it with a unique filename.
+
+    :param aiohttp.ClientSession session: The aiohttp session to use for the request.
+    :param str url: The URL of the file to download.
+    :param str out_dir: Directory to save the downloaded file.
+    :return: None
+    :rtype: None
+    :raises aiohttp.ClientError: If the download fails after retries.
+
+    The function appends a mapping of the original URL and the unique filename
+    to the global download_log.
+    """
     await asyncio.sleep(random.uniform(0, 1))
     filename = os.path.basename(urlparse(url).path)
     name, ext = os.path.splitext(filename)
@@ -104,6 +142,15 @@ async def download_file(session, url, out_dir):
 
 
 async def get_links_in_content(session, url):
+    """
+    Asynchronously extract all links from the 'content' div of a web page.
+
+    :param aiohttp.ClientSession session: The aiohttp session to use for the request.
+    :param str url: The URL of the page to parse.
+    :return: List of absolute URLs found in the 'content' div.
+    :rtype: list[str]
+    :raises aiohttp.ClientError: If the page cannot be fetched after retries.
+    """
     html = await fetch_html(session, url)
     soup = BeautifulSoup(html, "html.parser")
     content_div = soup.find("div", id="content")
@@ -113,6 +160,17 @@ async def get_links_in_content(session, url):
 
 
 async def scrape():
+    """
+    Main coroutine to orchestrate scraping and downloading of PDFs from the HMMT archive.
+
+    - Discovers all subpages from the archive index.
+    - Extracts all PDF links from subpages.
+    - Downloads all PDFs concurrently with retry and timeout handling.
+    - Writes a log of all downloads to a JSON file.
+
+    :return: None
+    :rtype: None
+    """
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     async with aiohttp.ClientSession() as session:
         print("📥 Fetching links pages...")
